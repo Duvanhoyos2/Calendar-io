@@ -1,29 +1,18 @@
 # Calendar-io
 
-Asistente personal en español con calendario mensual y registros por día. Incluye notas, frases, tareas y eventos, estado de ánimo, ingresos y gastos en COP, cuaderno cristiano con referencia bíblica, dictado y registro de recordatorios.
+## Abrir y modificar
 
-## Desarrollo
+1. Descarga `index.html` y guárdalo en una carpeta de tu computador.
+2. Haz doble clic en `index.html` para abrir la aplicación en Chrome o Edge.
+3. Abre ese mismo archivo en VS Code para modificarlo. Todo el HTML, diseño CSS y JavaScript está dentro del archivo, ordenado y con comentarios.
+4. Guarda con Ctrl + S y recarga el navegador.
 
-Requiere Node.js 20 o posterior. No necesita instalar dependencias.
+No necesitas instalar Node.js, dependencias ni ejecutar comandos. No necesitas los archivos separados de versiones anteriores.
 
-```sh
-npm run dev
-```
+## Tus datos
 
-El servidor usa el puerto 3000, configurable con `PORT`. Para las pruebas de fechas, validación y cálculos financieros:
+Los registros se guardan en el navegador. Exporta un respaldo desde el menú antes de cambiar de navegador, mover el archivo o reemplazar una versión: el almacenamiento de archivos locales depende del navegador y de su ruta. Los datos de la versión que se ejecutaba con servidor no se trasladan automáticamente; expórtalos allí e impórtalos en esta versión. No hay sincronización entre dispositivos.
 
-```sh
-npm test
-```
+Los totales financieros son del día seleccionado, en pesos colombianos. Los recordatorios se revisan con la aplicación abierta y al volver a abrirla; no hay alarmas con la aplicación cerrada.
 
-## Datos y límites de esta primera versión
-
-- Los datos se guardan en `localStorage` del navegador. No hay cuenta, servidor de datos ni sincronización. Exporta e importa respaldos JSON desde el menú. Importar reemplaza los datos con confirmación.
-- Los totales son del día seleccionado y se expresan en pesos colombianos.
-- El dictado depende de Web Speech API, del permiso de micrófono y de HTTPS o localhost. El navegador puede procesar la voz mediante su proveedor externo. Revisa el texto y pulsa Guardar registro para conservarlo. Si no hay soporte, usa dictado del teclado o escritura. El reconocimiento de voz real no se ha validado con micrófono físico.
-- Los recordatorios requieren fecha y hora. Se comprueban cada 15 segundos con la app abierta y al abrirla; los pendientes vencidos se muestran al regresar. Las notificaciones del sistema requieren permiso y soporte del navegador. No hay push ni alarmas con la app cerrada.
-- Usa la aplicación en la moto solo después de detenerte en un lugar seguro.
-
-## Validación realizada
-
-Tres pruebas automatizadas de modelo y una comprobación en Chromium de creación de notas, persistencia al recargar, cálculo de balance, completar tareas, persistencia del ánimo, cuaderno cristiano y ausencia de desbordamiento horizontal a 390 px. El diálogo de dictado se verifica; la captura de audio requiere validación manual en un dispositivo compatible.
+El dictado depende del soporte y los permisos del navegador. Algunos navegadores restringen el micrófono en archivos locales; en ese caso puedes escribir o usar el dictado del teclado. La captura real de voz requiere una prueba manual. Usa la aplicación en la moto solo cuando estés detenido en un lugar seguro.
