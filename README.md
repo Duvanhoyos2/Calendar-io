@@ -16,3 +16,11 @@ Los registros se guardan en el navegador. Exporta un respaldo desde el menú ant
 Los totales financieros son del día seleccionado, en pesos colombianos. Los recordatorios se revisan con la aplicación abierta y al volver a abrirla; no hay alarmas con la aplicación cerrada.
 
 El dictado depende del soporte y los permisos del navegador. Algunos navegadores restringen el micrófono en archivos locales; en ese caso puedes escribir o usar el dictado del teclado. La captura real de voz requiere una prueba manual. Usa la aplicación en la moto solo cuando estés detenido en un lugar seguro.
+
+## Dictar notas
+
+Pulsa «Dictar una nota» y acepta el permiso del micrófono. Habla: cuando el navegador termine de reconocer la frase, la nota se guarda automáticamente en el día seleccionado. También puedes pulsar «Terminar y guardar». No se guarda ninguna nota si no se recibe texto. La nota contiene el texto reconocido, no una grabación de audio.
+
+El reconocimiento usa el servicio de voz del navegador y puede necesitar Internet. Si falla, el mensaje explica si se trata de permisos, micrófono no disponible, conexión o falta de soporte, y permite reintentar sin cerrar la nota. El código no puede eludir los permisos del navegador. En archivos locales, si el navegador bloquea el servicio, Windows + H con el cursor en la descripción permite dictar mediante Windows; con esta alternativa hay que pulsar Guardar registro manualmente.
+
+Se verificó el flujo con reconocimiento simulado: transcripción y guardado automático, persistencia al recargar, error de permisos sin sobrescribirlo, reintento, parada manual y silencio sin crear una nota vacía. La captura física del micrófono y el servicio de reconocimiento deben probarse en el equipo del usuario.

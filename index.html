@@ -1034,7 +1034,8 @@
         <div>
           <h3>Que no se te escape esa idea</h3>
           <p>
-            Toca el micrófono, habla y guarda una nota en el día seleccionado.
+            Toca el micrófono y habla. Tu nota se guardará en el día
+            seleccionado al terminar.
           </p>
         </div>
         <button id="voice" class="primary">● Dictar una nota</button>
@@ -1091,7 +1092,16 @@
             placeholder="¿Qué quieres guardar de este día?"
           ></textarea>
         </label>
-        <p id="voice-status" role="status"></p>
+        <div class="voice-controls">
+          <button type="button" id="voice-start" class="primary">
+            🎙 Iniciar dictado
+          </button>
+          <button type="button" id="voice-stop" class="primary" hidden>
+            ■ Terminar y guardar
+          </button>
+        </div>
+        <p id="voice-status" role="status" aria-live="polite"></p>
+        <p id="voice-help" class="local-note" hidden></p>
         <label class="check"
           ><input type="checkbox" id="remind" /> Recordarme a la hora indicada
           mientras la aplicación esté abierta</label
@@ -1366,6 +1376,7 @@
         $("#type").value = type;
         fields();
         $("#voice-status").textContent = "";
+        $("#voice-help").hidden = true;
         $("#editor").showModal();
       }
       function fields() {
@@ -1537,50 +1548,153 @@
           ev.target.value = "";
         }
       };
-      let recognition;
-      function stopVoice() {
-        if (recognition) {
-          recognition.onend = null;
-          recognition.stop();
-          recognition = null;
-        }
+      // El reconocimiento depende del navegador y de su servicio de voz.
+      // Si falla, conserva siempre el texto y el mensaje de error.
+      let recognition = null;
+      function voiceButtons(active) {
+        $("#voice-start").hidden = active;
+        $("#voice-stop").hidden = !active;
       }
-      $("#voice").onclick = () => {
-        open();
+      function voiceHelp() {
+        const windows = /Windows/i.test(navigator.userAgent);
+        $("#voice-help").textContent = windows
+          ? "Alternativa en Windows: haz clic en la descripción y pulsa Windows + H. Dicta con la herramienta de Windows y después pulsa Guardar registro."
+          : "Alternativa: toca la descripción y usa el micrófono del teclado de tu dispositivo. Después pulsa Guardar registro.";
+        $("#voice-help").hidden = false;
+      }
+      function stopVoice() {
+        const current = recognition;
+        recognition = null;
+        if (current) {
+          current.onend = null;
+          current.onerror = null;
+          current.onresult = null;
+          try {
+            current.abort();
+          } catch {}
+        }
+        voiceButtons(false);
+      }
+      function startVoice() {
+        if (recognition) return;
+        voiceHelp();
         const Speech =
           window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!Speech) {
           $("#voice-status").textContent =
-            "Este navegador no admite dictado. Puedes usar el micrófono del teclado del celular o escribir tu nota.";
+            "Este navegador no admite el dictado de la página. Usa la alternativa indicada abajo o prueba Chrome actualizado.";
+          $("#text").focus();
           return;
         }
-        recognition = new Speech();
-        recognition.lang = "es-CO";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        $("#voice-status").textContent =
-          "Escuchando… al terminar, revisa la nota y pulsa Guardar registro.";
-        recognition.onresult = (ev) => {
-          $("#text").value = Array.from(ev.results)
-            .map((r) => r[0].transcript)
-            .join(" ");
-        };
-        recognition.onerror = (ev) => {
+        if (!window.isSecureContext) {
           $("#voice-status").textContent =
-            ev.error === "not-allowed"
-              ? "Permite el micrófono en tu navegador para dictar."
-              : "El dictado se interrumpió. Puedes editar y guardar el texto recibido.";
-        };
-        recognition.onend = () => {
-          $("#voice-status").textContent =
-            "Dictado terminado. Revisa y guarda tu nota.";
-        };
+            "El navegador bloquea el micrófono en este contexto. Usa el dictado del teclado indicado abajo.";
+          $("#text").focus();
+          return;
+        }
+        let current;
         try {
-          recognition.start();
+          current = new Speech();
         } catch {
           $("#voice-status").textContent =
-            "No se pudo iniciar el micrófono. Escribe tu nota o usa el dictado del teclado.";
+            "No se pudo activar el reconocimiento de voz. Usa la alternativa indicada abajo.";
+          return;
         }
+        recognition = current;
+        current.lang = "es-CO";
+        current.continuous = false;
+        current.interimResults = true;
+        let failed = false;
+        let received = false;
+        const previous = $("#text").value.trimEnd();
+        voiceButtons(true);
+        $("#voice-status").textContent =
+          "Solicitando micrófono… acepta el permiso si el navegador lo solicita.";
+        current.onstart = () => {
+          if (recognition !== current || failed) return;
+          $("#voice-status").textContent =
+            "Escuchando… tu nota se guardará al terminar de hablar. También puedes pulsar Terminar y guardar.";
+        };
+        current.onresult = (ev) => {
+          if (recognition !== current || failed) return;
+          const transcript = Array.from(ev.results)
+            .map((r) => r[0].transcript)
+            .join(" ");
+          received = received || !!transcript.trim();
+          $("#text").value = (
+            previous +
+            (previous && transcript ? "\n" : "") +
+            transcript
+          ).slice(0, 10000);
+        };
+        const messages = {
+          "not-allowed":
+            location.protocol === "file:"
+              ? "El navegador no autorizó el micrófono. Al abrir un archivo local puede restringir el dictado. Si no permite habilitarlo, usa Windows + H o el micrófono del teclado como se indica abajo."
+              : "El micrófono está bloqueado. Habilítalo en los permisos del sitio y en la privacidad del sistema, y pulsa Iniciar dictado.",
+          "service-not-allowed":
+            "El navegador no permite su servicio de reconocimiento. Prueba Chrome o usa el dictado del teclado.",
+          "audio-capture":
+            "No se encontró un micrófono disponible. Comprueba que esté conectado y permitido en la configuración del sistema.",
+          "no-speech":
+            "No se detectó voz. Pulsa Iniciar dictado y habla cerca del micrófono.",
+          network:
+            "No se pudo conectar al servicio de voz del navegador. Revisa tu conexión o usa el dictado del teclado.",
+          "language-not-supported":
+            "El servicio de voz no admite el idioma configurado. Usa el dictado del teclado.",
+          aborted:
+            "Dictado detenido. El texto recibido sigue disponible para guardar.",
+        };
+        current.onerror = (ev) => {
+          if (recognition !== current) return;
+          failed = true;
+          $("#voice-status").textContent =
+            messages[ev.error] ||
+            "El dictado falló (" +
+              ev.error +
+              "). Puedes reintentarlo o usar el dictado del teclado.";
+          recognition = null;
+          current.onresult = null;
+          try {
+            current.abort();
+          } catch {}
+          voiceButtons(false);
+        };
+        current.onend = () => {
+          if (recognition !== current) return;
+          recognition = null;
+          voiceButtons(false);
+          if (!failed && received && $("#type").value === "note") {
+            $("#entry-form").requestSubmit();
+          } else if (!failed) {
+            $("#voice-status").textContent = received
+              ? "Dictado terminado. Completa los campos del registro y pulsa Guardar registro."
+              : "No se recibió texto. Pulsa Iniciar dictado para reintentar o usa el dictado del teclado.";
+          }
+        };
+        try {
+          current.start();
+        } catch (err) {
+          current.onerror({
+            error:
+              err.name === "NotAllowedError"
+                ? "not-allowed"
+                : "service-not-allowed",
+          });
+        }
+      }
+      $("#voice-start").onclick = startVoice;
+      $("#voice-stop").onclick = () => {
+        if (!recognition) return;
+        try {
+          recognition.stop();
+        } catch {
+          stopVoice();
+        }
+      };
+      $("#voice").onclick = () => {
+        open();
+        startVoice();
       };
       function checkReminders() {
         let changed = false;
